@@ -1,16 +1,40 @@
 name: pages
 on:
-  push: {branches: [main]}
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [data]
   workflow_dispatch:
-permissions: {contents: read, pages: write, id-token: write}
-concurrency: {group: pages, cancel-in-progress: true}
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: {name: github-pages, url: "${{ steps.d.outputs.page_url }}"}
+    environment:
+      name: github-pages
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: nisokahmus-pixel/desk-data
+          token: ${{ secrets.DATA_TOKEN }}
+          path: _data
+          persist-credentials: false
+      - name: stage data
+        env:
+          DP: ${{ secrets.DATA_PATH }}
+        run: |
+          set +x
+          mkdir -p "web/d/$DP"
+          cp -r _data/data/. "web/d/$DP/" 2>/dev/null || true
+          rm -rf _data
       - uses: actions/upload-pages-artifact@v3
-        with: {path: web}
-      - id: d
+        with:
+          path: web
+      - id: deployment
         uses: actions/deploy-pages@v4
