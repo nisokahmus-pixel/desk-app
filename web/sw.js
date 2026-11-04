@@ -1,6 +1,6 @@
 // App shell cache only. Data under d/ is never cached: it always goes to the network.
-const SHELL = 'desk-shell-v1';
-const FILES = ['./', 'index.html', 'app.css', 'app.js', 'chart.js', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png'];
+const SHELL = 'desk-shell-v2';
+const FILES = ['./', 'index.html', 'app.css?v=2', 'app.js?v=2', 'chart.js?v=2', 'manifest.json', 'apple-touch-icon.png', 'icons/icon-192.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(SHELL).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
 });

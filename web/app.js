@@ -3,12 +3,24 @@
 (function () {
   'use strict';
   const LS = 'desk.dp', SEEN = 'desk.seen', POLL = 30000, RETRY = 15;
-  // ---- one-time #d= handoff: keep it in localStorage, strip it from the URL
-  (function () {
-    const m = location.hash.match(/[#&]d=([^&]+)/);
-    if (m) { try { localStorage.setItem(LS, decodeURIComponent(m[1])); } catch (e) {} history.replaceState(null, '', location.pathname + location.search); }
-  })();
+  // ---- #d= / ?d= handoff: keep it in localStorage.
+  // iOS gives a Home Screen web app its own storage, separate from Safari's, and installs the URL in the address bar
+  // (the manifest has no start_url for that reason). So in a Safari tab the link stays as #d= (a fragment never reaches
+  // a server), and once installed (standalone) it is stripped from the address bar after saving. ?d= is always moved off.
+  const STANDALONE = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  function takeLink() {
+    const m = location.hash.match(/[#&]d=([^&]+)/) || location.search.match(/[?&]d=([^&]+)/);
+    if (!m) return null;
+    const dp = decodeURIComponent(m[1]).trim();
+    try { localStorage.setItem(LS, dp); } catch (e) {}
+    const search = location.search.replace(/([?&])d=[^&]*&?/, '$1').replace(/[?&]$/, '');
+    history.replaceState(history.state, '', location.pathname + search + (STANDALONE ? '' : '#d=' + encodeURIComponent(dp)));
+    return dp;
+  }
+  takeLink();
   const DP = (function () { try { return localStorage.getItem(LS); } catch (e) { return null; } })();
+  // link tapped while the app was already open (fragment-only navigation, no reload): save it and start over
+  window.addEventListener('hashchange', () => { const dp = takeLink(); if (dp && dp !== DP) location.reload(); });
   const BASE = DP ? 'd/' + encodeURIComponent(DP) + '/' : null;
   const RM = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
